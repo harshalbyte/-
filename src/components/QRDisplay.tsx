@@ -15,72 +15,83 @@ export function QRDisplay({ value, settings }: QRDisplayProps) {
   const [isTreeMode, setIsTreeMode] = useState(false);
   const qrRef = useRef<SVGSVGElement>(null);
 
-  const handleDownloadImage = () => {
-    if (!qrRef.current) return;
-    const svgData = new XMLSerializer().serializeToString(qrRef.current);
-    const canvas = document.createElement("canvas");
-    const ctx = canvas.getContext("2d");
-    const img = new Image();
-    
-    img.onload = () => {
-      // Add background color to canvas before drawing SVG to avoid transparency issues
-      canvas.width = img.width;
-      canvas.height = img.height;
-      if (ctx) {
+  // Renders the QR SVG onto a canvas — includes the cherry blossom logo stamp in center
+  // Uses Blob + createObjectURL instead of btoa/base64 which fails on many SVG strings
+  const renderQRToCanvas = (size: number): Promise<HTMLCanvasElement> => {
+    return new Promise((resolve, reject) => {
+      if (!qrRef.current) return reject(new Error("QR ref not available"));
+      const svgData = new XMLSerializer().serializeToString(qrRef.current);
+      const blob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        canvas.width = size;
+        canvas.height = size;
+        const ctx = canvas.getContext("2d");
+        if (!ctx) { URL.revokeObjectURL(url); return resolve(canvas); }
+
         ctx.fillStyle = settings.bgColor;
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-        ctx.drawImage(img, 0, 0);
-      }
-      
-      const pngFile = canvas.toDataURL("image/png");
-      const downloadLink = document.createElement("a");
-      downloadLink.download = "hanami_qr.png";
-      downloadLink.href = `${pngFile}`;
-      downloadLink.click();
-    };
-    
-    img.src = `data:image/svg+xml;base64,${btoa(unescape(encodeURIComponent(svgData)))}`;
+        ctx.fillRect(0, 0, size, size);
+        ctx.drawImage(img, 0, 0, size, size);
+        URL.revokeObjectURL(url);
+
+        // Stamp the cherry blossom logo in the center (safe: level H allows ~30% occlusion)
+        const logoSize = Math.round(size * 0.2);
+        const center = size / 2;
+        const logoX = center - logoSize / 2;
+        const logoY = center - logoSize / 2;
+
+        // White circle background so QR scanners aren't confused by the image
+        ctx.beginPath();
+        ctx.arc(center, center, logoSize / 2 + 6, 0, Math.PI * 2);
+        ctx.fillStyle = 'white';
+        ctx.fill();
+
+        const logoImg = new Image();
+        logoImg.onload = () => {
+          ctx.drawImage(logoImg, logoX, logoY, logoSize, logoSize);
+          resolve(canvas);
+        };
+        logoImg.onerror = () => resolve(canvas); // resolve without logo if it can't load
+        logoImg.src = '/favicon.png';
+      };
+      img.onerror = () => { URL.revokeObjectURL(url); reject(new Error("SVG load failed")); };
+      img.src = url;
+    });
   };
 
-  const handleDownloadPDF = () => {
-    if (!qrRef.current) return;
-    const svgData = new XMLSerializer().serializeToString(qrRef.current);
-    const canvas = document.createElement("canvas");
-    const ctx = canvas.getContext("2d");
-    const img = new Image();
-    
-    img.onload = () => {
-      canvas.width = img.width;
-      canvas.height = img.height;
-      if (ctx) {
-        ctx.fillStyle = settings.bgColor;
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-        ctx.drawImage(img, 0, 0);
-      }
-      
+  const handleDownloadImage = async () => {
+    try {
+      const canvas = await renderQRToCanvas(512);
+      const downloadLink = document.createElement("a");
+      downloadLink.download = "taru_qr.png";
+      downloadLink.href = canvas.toDataURL("image/png");
+      downloadLink.click();
+    } catch (e) {
+      console.error("PNG download failed:", e);
+    }
+  };
+
+  const handleDownloadPDF = async () => {
+    try {
+      const canvas = await renderQRToCanvas(512);
       const imgData = canvas.toDataURL("image/png");
-      const pdf = new jsPDF({
-        orientation: "portrait",
-        unit: "mm",
-        format: "a4"
-      });
-      
-      // Center the image on the PDF
+      const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+
+      // QR code is always square — no need for getImageProperties (removed in jsPDF v4)
       const pdfWidth = pdf.internal.pageSize.getWidth();
-      const imgProps = pdf.getImageProperties(imgData);
       const margin = 20;
-      const calcWidth = pdfWidth - (2 * margin);
-      const calcHeight = (imgProps.height * calcWidth) / imgProps.width;
-      
-      pdf.addImage(imgData, 'PNG', margin, 40, calcWidth, calcHeight);
+      const imgSize = pdfWidth - (2 * margin); // square
+
       pdf.setFontSize(22);
       pdf.setTextColor('#5D4037');
-      pdf.text("Hanami QR", pdfWidth / 2, 25, { align: 'center' });
-      
-      pdf.save("hanami_qr.pdf");
-    };
-    
-    img.src = `data:image/svg+xml;base64,${btoa(unescape(encodeURIComponent(svgData)))}`;
+      pdf.text("Taru QR", pdfWidth / 2, 25, { align: 'center' });
+      pdf.addImage(imgData, 'PNG', margin, 40, imgSize, imgSize);
+      pdf.save("taru_qr.pdf");
+    } catch (e) {
+      console.error("PDF export failed:", e);
+    }
   };
 
   return (
@@ -100,18 +111,31 @@ export function QRDisplay({ value, settings }: QRDisplayProps) {
               animate={{ opacity: 1, rotateY: 0 }}
               exit={{ opacity: 0, rotateY: -90, filter: 'blur(10px)' }}
               transition={{ duration: 0.6, ease: [0.23, 1, 0.32, 1] }}
-              className="w-full h-full flex items-center justify-center"
+              className="relative w-full h-full flex items-center justify-center"
             >
               <QRCodeSVG
                 ref={qrRef}
                 value={value || "https://example.com"}
                 size={360}
                 fgColor={settings.fgColor}
-                bgColor="transparent"
+                bgColor={settings.bgColor}
                 level={settings.level}
                 includeMargin={false}
-                style={{ width: '100%', height: '100%', dropShadow: '0px 10px 20px rgba(0,0,0,0.1)' }}
+                style={{ width: '100%', height: '100%' }}
               />
+              {/* Cherry blossom leaf centered on the QR — safe because error correction level H handles it */}
+              <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                <div
+                  className="rounded-full bg-white flex items-center justify-center shadow-sm"
+                  style={{ width: '20%', height: '20%', padding: '2%' }}
+                >
+                  <img
+                    src="/favicon.png"
+                    alt="cherry blossom"
+                    style={{ width: '100%', height: '100%', objectFit: 'contain' }}
+                  />
+                </div>
+              </div>
             </motion.div>
           )}
         </AnimatePresence>
