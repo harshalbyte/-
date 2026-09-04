@@ -120,18 +120,31 @@ export function QRDisplay({ value, settings }: QRDisplayProps) {
                 style={{ width: '100%', height: '100%' }}
               />
 
-              {/* Sakura branch — mix-blend-mode:multiply makes the white JPG background invisible */}
+              {/* Sakura branch badge — white circle isolates multiply so JPEG white disappears cleanly */}
               <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                <img
-                  src="/sakura-branch.png"
-                  alt=""
-                  style={{
-                    width: '32%',
-                    height: '32%',
-                    objectFit: 'contain',
-                    mixBlendMode: 'multiply',
-                  }}
-                />
+                <div style={{
+                  width: '28%',
+                  height: '28%',
+                  borderRadius: '50%',
+                  background: 'white',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  overflow: 'hidden',
+                  isolation: 'isolate',
+                  boxShadow: '0 2px 16px rgba(244,143,177,0.4)',
+                }}>
+                  <img
+                    src="/sakura-branch.png"
+                    alt=""
+                    style={{
+                      width: '120%',
+                      height: '120%',
+                      objectFit: 'cover',
+                      mixBlendMode: 'multiply',
+                    }}
+                  />
+                </div>
               </div>
             </motion.div>
           )}
