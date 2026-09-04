@@ -1,0 +1,8 @@
+{
+  "name": "Hanami QR",
+  "description": "Premium Aesthetic QR Code Generator with a Japanese Floral Pastel theme and Glassmorphism design.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
