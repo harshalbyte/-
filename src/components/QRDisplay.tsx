@@ -11,20 +11,20 @@ interface QRDisplayProps {
   settings: QRSettings;
 }
 
-// Loads the sakura branch image for canvas stamping in downloads
+// Loads the transparent sakura branch PNG for canvas stamping in downloads
 const loadBlossomImage = (): Promise<HTMLImageElement> =>
   new Promise((resolve, reject) => {
     const img = new Image();
     img.onload = () => resolve(img);
     img.onerror = () => reject();
-    img.src = '/sakura-branch.png';
+    img.src = '/sakura-branch-transparent.png';
   });
 
 export function QRDisplay({ value, settings }: QRDisplayProps) {
   const [isTreeMode, setIsTreeMode] = useState(false);
   const qrRef = useRef<SVGSVGElement>(null);
 
-  // Renders QR + cherry blossom onto a canvas for downloading
+  // Renders QR + sakura branch onto a canvas for downloading — matches live preview layout
   const renderQRToCanvas = (size: number): Promise<HTMLCanvasElement> => {
     return new Promise((resolve, reject) => {
       if (!qrRef.current) return reject(new Error('QR ref not available'));
@@ -40,21 +40,23 @@ export function QRDisplay({ value, settings }: QRDisplayProps) {
         const ctx = canvas.getContext('2d');
         if (!ctx) { URL.revokeObjectURL(url); return resolve(canvas); }
 
-        // Draw background + QR
+        // Background fills entire canvas (slightly bigger than QR)
         ctx.fillStyle = settings.bgColor;
         ctx.fillRect(0, 0, size, size);
-        ctx.drawImage(img, 0, 0, size, size);
+
+        // QR drawn at 86% centered (same as live preview)
+        const qrSize = Math.round(size * 0.86);
+        const qrOffset = Math.round((size - qrSize) / 2);
+        ctx.drawImage(img, qrOffset, qrOffset, qrSize, qrSize);
         URL.revokeObjectURL(url);
 
-        // Stamp the sakura branch in center with multiply blend (eliminates white background)
+        // Sakura branch at 42% — proper transparent PNG, no blend mode needed
         try {
-          const logoSize = Math.round(size * 0.3);
+          const logoSize = Math.round(size * 0.42);
           const center = size / 2;
           const blossom = await loadBlossomImage();
-          ctx.globalCompositeOperation = 'multiply';
           ctx.drawImage(blossom, center - logoSize / 2, center - logoSize / 2, logoSize, logoSize);
-          ctx.globalCompositeOperation = 'source-over'; // reset
-        } catch (_) { /* skip logo if it fails */ }
+        } catch (_) { /* skip if image fails */ }
 
         resolve(canvas);
       };
@@ -92,11 +94,15 @@ export function QRDisplay({ value, settings }: QRDisplayProps) {
 
   return (
     <div className="flex flex-col items-center justify-center w-full h-full p-6 lg:p-12">
+      {/* QR card — bgColor applied to container so it's slightly bigger than the QR itself */}
       <div
-        className="relative w-full max-w-[320px] lg:max-w-[420px] aspect-square flex items-center justify-center bg-white rounded-[40px] shadow-[0_10px_30px_rgba(0,0,0,0.03)] p-8 lg:p-12 cursor-pointer group transition-transform hover:scale-[1.02]"
+        className="relative w-full max-w-[320px] lg:max-w-[420px] aspect-square flex items-center justify-center rounded-[40px] shadow-[0_10px_30px_rgba(0,0,0,0.08)] cursor-pointer group transition-transform hover:scale-[1.02]"
+        style={{ background: settings.bgColor, padding: '0' }}
         onClick={() => setIsTreeMode(!isTreeMode)}
         title="Click to interact"
       >
+        {/* Slightly inset area for the QR so the color bleeds past the QR edges */}
+        <div className="absolute inset-0 rounded-[40px]" style={{ background: settings.bgColor }} />
         <AnimatePresence mode="wait">
           {isTreeMode ? (
             <SakuraTree key="tree" />
@@ -114,37 +120,24 @@ export function QRDisplay({ value, settings }: QRDisplayProps) {
                 value={value || 'https://example.com'}
                 size={360}
                 fgColor={settings.fgColor}
-                bgColor={settings.bgColor}
+                bgColor="transparent"
                 level={settings.level}
                 includeMargin={false}
-                style={{ width: '100%', height: '100%' }}
+                style={{ width: '86%', height: '86%', position: 'relative', zIndex: 1 }}
               />
 
-              {/* Sakura branch badge — white circle isolates multiply so JPEG white disappears cleanly */}
-              <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                <div style={{
-                  width: '28%',
-                  height: '28%',
-                  borderRadius: '50%',
-                  background: 'white',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  overflow: 'hidden',
-                  isolation: 'isolate',
-                  boxShadow: '0 2px 16px rgba(244,143,177,0.4)',
-                }}>
-                  <img
-                    src="/sakura-branch.png"
-                    alt=""
-                    style={{
-                      width: '120%',
-                      height: '120%',
-                      objectFit: 'cover',
-                      mixBlendMode: 'multiply',
-                    }}
-                  />
-                </div>
+              {/* Sakura branch — proper transparent PNG, floats cleanly over the QR */}
+              <div className="absolute inset-0 flex items-center justify-center pointer-events-none" style={{ zIndex: 2 }}>
+                <img
+                  src="/sakura-branch-transparent.png"
+                  alt=""
+                  style={{
+                    width: '42%',
+                    height: '42%',
+                    objectFit: 'contain',
+                    filter: 'drop-shadow(0 2px 8px rgba(180,80,120,0.3))',
+                  }}
+                />
               </div>
             </motion.div>
           )}
