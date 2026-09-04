@@ -46,12 +46,14 @@ export function QRDisplay({ value, settings }: QRDisplayProps) {
         ctx.drawImage(img, 0, 0, size, size);
         URL.revokeObjectURL(url);
 
-        // Stamp the cherry blossom in center (level H = ~30% occlusion tolerance)
+        // Stamp the sakura branch in center with multiply blend (eliminates white background)
         try {
-          const logoSize = Math.round(size * 0.2);
+          const logoSize = Math.round(size * 0.3);
           const center = size / 2;
           const blossom = await loadBlossomImage();
+          ctx.globalCompositeOperation = 'multiply';
           ctx.drawImage(blossom, center - logoSize / 2, center - logoSize / 2, logoSize, logoSize);
+          ctx.globalCompositeOperation = 'source-over'; // reset
         } catch (_) { /* skip logo if it fails */ }
 
         resolve(canvas);
@@ -118,12 +120,17 @@ export function QRDisplay({ value, settings }: QRDisplayProps) {
                 style={{ width: '100%', height: '100%' }}
               />
 
-              {/* Sakura branch centered on QR — transparent PNG, level H error correction handles coverage */}
+              {/* Sakura branch — mix-blend-mode:multiply makes the white JPG background invisible */}
               <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                 <img
                   src="/sakura-branch.png"
                   alt=""
-                  style={{ width: '55%', height: '55%', objectFit: 'contain' }}
+                  style={{
+                    width: '32%',
+                    height: '32%',
+                    objectFit: 'contain',
+                    mixBlendMode: 'multiply',
+                  }}
                 />
               </div>
             </motion.div>
