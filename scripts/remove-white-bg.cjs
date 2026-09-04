@@ -1,10 +1,8 @@
-// Converts the sakura-branch.png (which may be a JPEG) into a proper PNG
-// with white pixels removed (made transparent) using canvas
 const { createCanvas, loadImage } = require('canvas');
 const fs = require('fs');
 const path = require('path');
 
-async function removeWhiteBackground(inputPath, outputPath, threshold = 240) {
+async function removeBackground(inputPath, outputPath) {
   const img = await loadImage(inputPath);
   const canvas = createCanvas(img.width, img.height);
   const ctx = canvas.getContext('2d');
@@ -15,19 +13,30 @@ async function removeWhiteBackground(inputPath, outputPath, threshold = 240) {
 
   for (let i = 0; i < data.length; i += 4) {
     const r = data[i], g = data[i + 1], b = data[i + 2];
-    // If the pixel is near-white, make it transparent
-    if (r > threshold && g > threshold && b > threshold) {
-      data[i + 3] = 0; // alpha = 0
+    const max = Math.max(r, g, b);
+    const min = Math.min(r, g, b);
+    const saturation = max > 0 ? (max - min) / max : 0; // HSV saturation (0=gray, 1=vivid)
+    const brightness = max / 255;                        // HSV brightness (0=black, 1=white)
+
+    // Remove pixels that are bright AND desaturated = white/gray background
+    // Keep colorful pixels (pink petals, green leaves, dark brown branch)
+    const isBackground =
+      (brightness > 0.70 && saturation < 0.15) || // medium-gray to white desaturated
+      (brightness > 0.88 && saturation < 0.22);   // near-white with slight color cast
+
+    if (isBackground) {
+      data[i + 3] = 0; // fully transparent
     }
   }
 
   ctx.putImageData(imageData, 0, 0);
   const buffer = canvas.toBuffer('image/png');
   fs.writeFileSync(outputPath, buffer);
-  console.log('Saved transparent PNG to', outputPath);
+  console.log(`Saved: ${outputPath} (${img.width}x${img.height})`);
 }
 
-removeWhiteBackground(
+removeBackground(
   path.join(__dirname, '../public/sakura-branch.png'),
   path.join(__dirname, '../public/sakura-branch-transparent.png'),
 ).catch(console.error);
+

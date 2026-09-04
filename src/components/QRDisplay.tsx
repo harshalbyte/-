@@ -126,35 +126,18 @@ export function QRDisplay({ value, settings }: QRDisplayProps) {
                 style={{ width: '86%', height: '86%', position: 'relative', zIndex: 1 }}
               />
 
-              {/* Sakura — soft radial glow fades from bgColor center to transparent edges, no hard box */}
+              {/* Sakura — transparent PNG floating cleanly over the QR */}
               <div className="absolute inset-0 flex items-center justify-center pointer-events-none" style={{ zIndex: 2 }}>
-                <div style={{
-                  position: 'relative',
-                  width: '52%',
-                  height: '52%',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}>
-                  {/* Soft glow background — white center fading to transparent */}
-                  <div style={{
-                    position: 'absolute',
-                    inset: 0,
-                    borderRadius: '50%',
-                    background: `radial-gradient(ellipse at center, ${settings.bgColor} 20%, ${settings.bgColor}CC 45%, ${settings.bgColor}44 65%, transparent 80%)`,
-                  }} />
-                  <img
-                    src="/sakura-branch-transparent.png"
-                    alt=""
-                    style={{
-                      position: 'relative',
-                      width: '90%',
-                      height: '90%',
-                      objectFit: 'contain',
-                      filter: 'drop-shadow(0 2px 10px rgba(180,80,120,0.35))',
-                    }}
-                  />
-                </div>
+                <img
+                  src="/sakura-branch-transparent.png"
+                  alt=""
+                  style={{
+                    width: '35%',
+                    height: '35%',
+                    objectFit: 'contain',
+                    filter: 'drop-shadow(0 1px 6px rgba(180,80,120,0.3))',
+                  }}
+                />
               </div>
             </motion.div>
           )}
