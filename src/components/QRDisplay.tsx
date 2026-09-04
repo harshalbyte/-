@@ -11,40 +11,13 @@ interface QRDisplayProps {
   settings: QRSettings;
 }
 
-// Pure SVG cherry blossom — no external image, no background artifacts, crisp at any size.
-// White circle base is baked in so it sits cleanly over the QR code.
-const BLOSSOM_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
-  <circle cx="50" cy="50" r="50" fill="white"/>
-  <g transform="translate(50,50)">
-    <ellipse cx="0" cy="-20" rx="9" ry="15" fill="#FFB7C5"/>
-    <ellipse cx="0" cy="-20" rx="9" ry="15" fill="#F48FB1" transform="rotate(72)"/>
-    <ellipse cx="0" cy="-20" rx="9" ry="15" fill="#FFB7C5" transform="rotate(144)"/>
-    <ellipse cx="0" cy="-20" rx="9" ry="15" fill="#F48FB1" transform="rotate(216)"/>
-    <ellipse cx="0" cy="-20" rx="9" ry="15" fill="#FFB7C5" transform="rotate(288)"/>
-    <circle cx="0" cy="0" r="7" fill="#F8BBD0"/>
-    <circle cx="0" cy="0" r="4" fill="#F48FB1"/>
-    <line x1="0" y1="0" x2="0" y2="-11" stroke="#C2185B" stroke-width="1.5" stroke-linecap="round"/>
-    <circle cx="0" cy="-12" r="2" fill="#C2185B"/>
-    <line x1="0" y1="0" x2="8" y2="-8" stroke="#C2185B" stroke-width="1.5" stroke-linecap="round"/>
-    <circle cx="9" cy="-9" r="2" fill="#C2185B"/>
-    <line x1="0" y1="0" x2="-8" y2="-8" stroke="#C2185B" stroke-width="1.5" stroke-linecap="round"/>
-    <circle cx="-9" cy="-9" r="2" fill="#C2185B"/>
-    <line x1="0" y1="0" x2="7" y2="7" stroke="#C2185B" stroke-width="1.5" stroke-linecap="round"/>
-    <circle cx="8" cy="8" r="2" fill="#C2185B"/>
-    <line x1="0" y1="0" x2="-7" y2="7" stroke="#C2185B" stroke-width="1.5" stroke-linecap="round"/>
-    <circle cx="-8" cy="8" r="2" fill="#C2185B"/>
-  </g>
-</svg>`;
-
-// Loads the blossom SVG string as an Image via Blob URL (used for canvas stamping)
+// Loads the sakura branch image for canvas stamping in downloads
 const loadBlossomImage = (): Promise<HTMLImageElement> =>
   new Promise((resolve, reject) => {
-    const blob = new Blob([BLOSSOM_SVG], { type: 'image/svg+xml;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
     const img = new Image();
-    img.onload = () => { URL.revokeObjectURL(url); resolve(img); };
-    img.onerror = () => { URL.revokeObjectURL(url); reject(); };
-    img.src = url;
+    img.onload = () => resolve(img);
+    img.onerror = () => reject();
+    img.src = '/sakura-branch.png';
   });
 
 export function QRDisplay({ value, settings }: QRDisplayProps) {
@@ -145,38 +118,13 @@ export function QRDisplay({ value, settings }: QRDisplayProps) {
                 style={{ width: '100%', height: '100%' }}
               />
 
-              {/* Cherry blossom — inline SVG, perfectly transparent, crisp at any size */}
+              {/* Sakura branch centered on QR — transparent PNG, level H error correction handles coverage */}
               <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                <svg
-                  viewBox="0 0 100 100"
-                  xmlns="http://www.w3.org/2000/svg"
-                  style={{ width: '20%', height: '20%' }}
-                >
-                  {/* White circle base */}
-                  <circle cx="50" cy="50" r="50" fill="white" />
-                  <g transform="translate(50,50)">
-                    {/* 5 petals */}
-                    <ellipse cx="0" cy="-20" rx="9" ry="15" fill="#FFB7C5" />
-                    <ellipse cx="0" cy="-20" rx="9" ry="15" fill="#F48FB1" transform="rotate(72)" />
-                    <ellipse cx="0" cy="-20" rx="9" ry="15" fill="#FFB7C5" transform="rotate(144)" />
-                    <ellipse cx="0" cy="-20" rx="9" ry="15" fill="#F48FB1" transform="rotate(216)" />
-                    <ellipse cx="0" cy="-20" rx="9" ry="15" fill="#FFB7C5" transform="rotate(288)" />
-                    {/* Center */}
-                    <circle cx="0" cy="0" r="7" fill="#F8BBD0" />
-                    <circle cx="0" cy="0" r="4" fill="#F48FB1" />
-                    {/* Stamens */}
-                    <line x1="0" y1="0" x2="0" y2="-11" stroke="#C2185B" strokeWidth="1.5" strokeLinecap="round" />
-                    <circle cx="0" cy="-12" r="2" fill="#C2185B" />
-                    <line x1="0" y1="0" x2="8" y2="-8" stroke="#C2185B" strokeWidth="1.5" strokeLinecap="round" />
-                    <circle cx="9" cy="-9" r="2" fill="#C2185B" />
-                    <line x1="0" y1="0" x2="-8" y2="-8" stroke="#C2185B" strokeWidth="1.5" strokeLinecap="round" />
-                    <circle cx="-9" cy="-9" r="2" fill="#C2185B" />
-                    <line x1="0" y1="0" x2="7" y2="7" stroke="#C2185B" strokeWidth="1.5" strokeLinecap="round" />
-                    <circle cx="8" cy="8" r="2" fill="#C2185B" />
-                    <line x1="0" y1="0" x2="-7" y2="7" stroke="#C2185B" strokeWidth="1.5" strokeLinecap="round" />
-                    <circle cx="-8" cy="8" r="2" fill="#C2185B" />
-                  </g>
-                </svg>
+                <img
+                  src="/sakura-branch.png"
+                  alt=""
+                  style={{ width: '55%', height: '55%', objectFit: 'contain' }}
+                />
               </div>
             </motion.div>
           )}
